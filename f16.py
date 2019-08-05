@@ -421,7 +421,7 @@ def dynamics(x: State, u: Control, p: Parameters, tables):
 
     # kinematics
     dx.phi_dot = x.P + (sth/cth)*(qsph + x.R*cph)
-    dx.theta_dot = x.Q - x.R*sph
+    dx.theta_dot = x.Q*cph - x.R*sph
     dx.psi_dot = (qsph + x.R*cph)/cth
 
     # moments

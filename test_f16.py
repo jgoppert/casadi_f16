@@ -85,7 +85,7 @@ def test_trim1():
     u = f16.Control(thtl=0.1385, elv_deg=-0.7588, ail_deg=-1.2e-7, rdr_deg=6.2e-7)
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 1e-2
+    assert trim_cost(dx) < 2e-3
 
 
 def test_trim2():
@@ -95,7 +95,7 @@ def test_trim2():
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 1e-1
+    assert trim_cost(dx) < 2e-2
 
 
 def test_trim3():
@@ -105,7 +105,7 @@ def test_trim3():
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 1e-4
+    assert trim_cost(dx) < 2e-5
 
 
 def test_trim4():
@@ -117,7 +117,7 @@ def test_trim4():
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 3000
+    assert trim_cost(dx) < 3e3
 
 
 def test_trim5():
@@ -128,4 +128,4 @@ def test_trim5():
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 2000
+    assert trim_cost(dx) < 2e3
