@@ -81,51 +81,71 @@ def test_jacobian():
 def test_trim1():
     p = f16.Parameters()
     tables = f16.build_tables()
-    x = f16.State(VT=502, alpha=0.03691, beta=-4e-9, theta=0.03691)
-    u = f16.Control(thtl=0.1385, elv_deg=-0.7588, ail_deg=-1.2e-7, rdr_deg=6.2e-7)
+    x = f16.State(VT=502, alpha=0.03691, theta=0.03691)
+    u = f16.Control(thtl=0.1385, elv_deg=-0.7588)
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 2e-3
+    assert trim_cost(dx) < 1e-5
 
 
 def test_trim2():
     p = f16.Parameters(xcg=0.3)
-    x = f16.State(VT=502, alpha=0.03936, beta=4.1e-9, theta=0.03936)
-    u = f16.Control(thtl=0.1485, elv_deg=-1.931, ail_deg=-7.0e-8, rdr_deg=8.3e-7)
+    x = f16.State(VT=502, alpha=0.03936, theta=0.03936)
+    u = f16.Control(thtl=0.1485, elv_deg=-1.931)
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 2e-2
+    assert trim_cost(dx) < 1e-5
 
 
 def test_trim3():
     p = f16.Parameters(xcg=0.38)
-    x = f16.State(VT=502, alpha=0.03544, beta=3.1e-8, theta=0.03544)
-    u = f16.Control(thtl=0.1325, elv_deg=-0.0559, ail_deg=-5.1e-7, rdr_deg=4.3e-6)
+    x = f16.State(VT=502, alpha=0.03544, theta=0.03544)
+    u = f16.Control(thtl=0.1325, elv_deg=-0.0559)
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 2e-5
+    assert trim_cost(dx) < 1e-5
 
 
 def test_trim4():
     p = f16.Parameters(xcg=0.3)
     psi_dot = 0.3
-    x = f16.State(VT=502, alpha=0.2485, beta=4.8e-4, phi=1.367, theta=0.05185,
+    x = f16.State(VT=502, alpha=0.2485, phi=1.367, theta=0.05185,
                   P=-0.0155, Q=0.2934, R=0.06071)
     u = f16.Control(thtl=0.8499, elv_deg=-6.256, ail_deg=0.09891, rdr_deg=-0.4218)
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 3e3
+    assert trim_cost(dx) < 1e-5
 
 
 def test_trim5():
     p = f16.Parameters(xcg=-0.3)
     theta_dot = 0.3
-    x = f16.State(VT=502, alpha=0.3006, beta=4.1e-5, theta=0.3006, Q=0.3)
-    u = f16.Control(thtl=1.023, elv_deg=-7.082, ail_deg=-6.2e-4, rdr_deg=0.01655)
+    x = f16.State(VT=502, alpha=0.3006, theta=0.3006, Q=0.3)
+    u = f16.Control(thtl=1.023, elv_deg=-7.082, rdr_deg=0.01655)
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < 2e3
+    assert trim_cost(dx) < 1e-5
+
+
+def test_table_3_5_2():
+    p = f16.Parameters(xcg=0.4)
+    x = f16.State(
+        VT=500, alpha=0.5, beta=-0.2,
+        phi=-1, theta=1, psi=-1,
+        P=0.7, Q=-0.8, R=0.9,
+        p_N=1000, p_E=900, alt=10000, power=90)
+    u = f16.Control(thtl=0.9, ail_deg=20, elv_deg=-15, rdr_deg=-20)
+    tables = f16.build_tables()
+    dx = f16.dynamics(x, u, p, tables)
+    dx_compute = np.array(dx.to_casadi())[:, 0]
+    dx_check = np.array([
+        -75.23724, -0.8813491, -0.4759990,
+        2.505734, 0.3250820, 2.145926,
+        12.62679, 0.9649671, 0.5809759,
+        342.4439, -266.7707, 248.1241, -58.68999
+    ])
+    assert np.allclose(dx_compute, dx_check)

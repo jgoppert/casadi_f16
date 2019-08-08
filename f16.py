@@ -341,8 +341,8 @@ def dynamics(x: State, u: Control, p: Parameters, tables):
     dx = StateDot()
 
     # functions
-    cos = np.cos
-    sin = np.sin
+    cos = ca.cos
+    sin = ca.sin
 
     # mass properties
     mass = p.weight/p.g
