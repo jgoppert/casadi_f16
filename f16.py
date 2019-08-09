@@ -1,7 +1,7 @@
-import casadi as ca
+from dataclasses import dataclass, astuple
 import numpy as np
-from casadi.tools.graph import graph
-from dataclasses import dataclass, asdict, astuple
+
+import casadi as ca
 
 
 INTERP_DEFAULT = 'linear'
@@ -33,7 +33,6 @@ def build_tables():
         return ca.Function('Cx', [x, y], [interp(ca.vertcat(xs, ys))], [row_label, col_label], [name])
 
     def create_damping():
-        alpha_deg = ca.MX.sym('alpha_deg')
         data = np.array([
             [-10,    -5,      0,      5,      10,     15,     20,     25,     30,     35,     40,     45],  # alpha, deg
             [-0.267, -0.110,  0.308,  1.34,   2.08,   2.91,   2.76,   2.05,   1.50,   1.49,   1.83,   1.21],  # CXq
