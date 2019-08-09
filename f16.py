@@ -260,7 +260,7 @@ def build_tables():
         R0 = 2.377e-3
         Tfac = 1 - 0.703e-5*alt
         T = ca.if_else(alt > 35000, 390, 519*Tfac)
-        rho = R0*(Tfac**4.14)
+        rho = R0*(Tfac**(4.14))
         tables['amach'] = ca.Function('amach', [vt, alt], [vt/(ca.sqrt(1.4*1716.3*T))], ['vt', 'alt'], ['amach'])
         tables['qbar'] = ca.Function('qbar', [vt, alt], [0.5*rho*vt**2], ['vt', 'alt'], ['qbar'])
         tables['ps'] = ca.Function('qbar', [alt], [1715*rho*T], ['alt'], ['amach'])
