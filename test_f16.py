@@ -6,6 +6,9 @@ import casadi as ca
 import pytest
 
 
+TRIM_TOL = 1e-1
+
+
 def plot_table2D(title, path, x_grid, y_grid, x_label, y_label, f_table):
     X, Y = np.meshgrid(x_grid, y_grid)
     Z = np.zeros((len(x_grid), len(y_grid)))
@@ -117,7 +120,7 @@ def test_trim1():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < 1e-3
+    assert trim_cost(dx) < TRIM_TOL
 
 
 def test_trim2():
@@ -129,7 +132,7 @@ def test_trim2():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < 1e-3
+    assert trim_cost(dx) < TRIM_TOL
 
 
 def test_trim3():
@@ -141,7 +144,7 @@ def test_trim3():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < 1e-3
+    assert trim_cost(dx) < TRIM_TOL
 
 
 def test_trim4():
@@ -155,7 +158,7 @@ def test_trim4():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < 1e-3
+    assert trim_cost(dx) < TRIM_TOL
 
 
 def test_trim5():
@@ -168,7 +171,7 @@ def test_trim5():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < 1e-3
+    assert trim_cost(dx) < TRIM_TOL
 
 
 def test_trim6():
@@ -183,7 +186,7 @@ def test_trim6():
     tables = f16.build_tables()
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < 1e-3
+    assert trim_cost(dx) < TRIM_TOL
 
 
 def test_table_3_5_2():
@@ -207,4 +210,4 @@ def test_table_3_5_2():
     print('\nexpected:\n\t', np.round(dx_check))
     print('\nactual:\n\t', np.round(dx_compute))
     print('\nerror:\n\t', np.round(dx_check - dx_compute))
-    assert np.allclose(dx_compute, dx_check, 1e-3)
+    assert np.allclose(dx_compute, dx_check, TRIM_TOL)
