@@ -48,7 +48,7 @@ def build_tables():
         ])
         names = ['CXq', 'CYr', 'CYp', 'CZq', 'Clr', 'Clp', 'Cmq', 'Cnr', 'Cnp']
         for i, name in enumerate(names):
-            tables[name] = ca.interpolant('{:s}_interp'.format(name), INTERP_DEFAULT, [data[0, :]], data[i, :].ravel(order='F'))
+            tables[name] = ca.interpolant('{:s}_interp'.format(name), INTERP_DEFAULT, [data[0, :]], data[i + 1, :])
     create_damping()
 
     tables['Cx'] = create_table2D(
