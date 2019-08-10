@@ -5,6 +5,8 @@ import casadi as ca
 
 
 INTERP_DEFAULT = 'linear'
+#INTERP_DEFAULT = 'bspline'
+TABLE_CHECK_TOL = 1e-9  # need to increase if using bspline
 
 
 def build_tables():
@@ -36,7 +38,7 @@ def build_tables():
         # check
         for i, x in enumerate(row_grid):
             for j, y in enumerate(col_grid):
-                assert func(x, y) == table_data[i, j]
+                assert ca.fabs(func(x, y) - table_data[i, j]) < TABLE_CHECK_TOL
 
         return func
 
@@ -59,7 +61,7 @@ def build_tables():
                 [data[0, :]], data[i + 1, :])
             # check
             for j, x in enumerate(data[0, :]):
-                assert tables[name](x) ==  data[i + 1, j]
+                assert ca.fabs(tables[name](x) - data[i + 1, j]) < TABLE_CHECK_TOL
 
     create_damping()
 

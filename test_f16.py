@@ -58,26 +58,6 @@ def test_tables():
     plot_table2D('amach', path, np.linspace(0, 1000), np.linspace(0, 60000), 'VT, ft/s', 'alt, ft', tables['amach'])
     plt.close()
 
-    assert tables['Cx'](-10, -24) == -0.099
-    assert tables['Cx'](45, 24) == 0.040
-    assert tables['Cm'](-10, -24) == 0.205
-    assert tables['Cl'](-10, 5) == -0.001
-    assert tables['Cn'](-10, 5) == 0.018
-    assert tables['DlDa'](-10, -30) == -0.041
-    assert tables['DlDr'](-10, -30) == 0.005
-    assert tables['DnDa'](-10, -30) == 0.001
-    assert tables['DnDr'](-10, -30) == -0.018
-    assert tables['DnDr'](-10, -30) == -0.018
-    assert tables['CXq'](-10) == -0.267
-    assert tables['CYr'](-10) == 0.882
-    assert tables['CYp'](-10) == -0.108
-    assert tables['CZq'](-10) == -8.80
-    assert tables['Clr'](-10) == -0.126
-    assert tables['Clp'](-10) == -0.360
-    assert tables['Cmq'](-10) == -7.21
-    assert tables['Cnr'](-10) == -0.380
-    assert tables['Cnp'](45) == 0.150
-
     names = ['CXq', 'CYr', 'CYp', 'CZq', 'Clr', 'Clp', 'Cmq', 'Cnr', 'Cnp']
     for name in names:
         plt.figure()
