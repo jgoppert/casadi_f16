@@ -17,9 +17,10 @@ def build_tables():
         assert data[0, 0] == 0
         row_grid = data[1:, 0]
         col_grid = data[0, 1:]
+        table_data = data[1:, 1:]
 
         interp = ca.interpolant(name + '_interp', interp_method, [row_grid, col_grid],
-                                data[1:, 1:].ravel(order='F'))
+                                table_data.ravel(order='F'))
         x = ca.MX.sym('x')
         y = ca.MX.sym('y')
         if abs_row:
@@ -30,7 +31,14 @@ def build_tables():
             ys = ca.fabs(y)
         else:
             ys = y
-        return ca.Function('Cx', [x, y], [interp(ca.vertcat(xs, ys))], [row_label, col_label], [name])
+        func = ca.Function('Cx', [x, y], [interp(ca.vertcat(xs, ys))], [row_label, col_label], [name])
+
+        # check
+        for i, x in enumerate(row_grid):
+            for j, y in enumerate(col_grid):
+                assert func(x, y) == table_data[i, j]
+
+        return func
 
     def create_damping():
         data = np.array([
@@ -47,7 +55,12 @@ def build_tables():
         ])
         names = ['CXq', 'CYr', 'CYp', 'CZq', 'Clr', 'Clp', 'Cmq', 'Cnr', 'Cnp']
         for i, name in enumerate(names):
-            tables[name] = ca.interpolant('{:s}_interp'.format(name), INTERP_DEFAULT, [data[0, :]], data[i + 1, :])
+            tables[name] = ca.interpolant('{:s}_interp'.format(name), INTERP_DEFAULT,
+                [data[0, :]], data[i + 1, :])
+            # check
+            for j, x in enumerate(data[0, :]):
+                assert tables[name](x) ==  data[i + 1, j]
+
     create_damping()
 
     tables['Cx'] = create_table2D(
@@ -81,7 +94,7 @@ def build_tables():
                                 data[1, :])
         return ca.Function('Cz',
                            [alpha_deg, beta_deg, elev_deg],
-                           [interp(alpha_deg)*(1 - (beta_deg/57.3)**2 - 0.19*elev_deg/25.0)],
+                           [interp(alpha_deg)*(1 - (beta_deg/57.3)**2) - 0.19*elev_deg/25.0],
                            ['alpha_deg', 'beta_deg', 'elev_deg'], ['Cz'])
 
     tables['Cz'] = create_Cz()
@@ -403,11 +416,11 @@ def dynamics(x: State, u: Control, p: Parameters, tables):
     cyt = tables['Cy'](beta_deg, ail_deg, rdr_deg)
     czt = tables['Cz'](alpha_deg, beta_deg, elv_deg)
     
-    clt = tables['Cl'](alpha_deg, beta_deg) \
+    clt = ca.sign(beta_deg)*tables['Cl'](alpha_deg, beta_deg) \
         + tables['DlDa'](alpha_deg, beta_deg)*dail \
         + tables['DlDr'](alpha_deg, beta_deg)*drdr
     cmt = tables['Cm'](alpha_deg, u.elv_deg)
-    cnt = tables['Cn'](alpha_deg, beta_deg) \
+    cnt = ca.sign(beta_deg)*tables['Cn'](alpha_deg, beta_deg) \
         + tables['DnDa'](alpha_deg, beta_deg)*dail \
         + tables['DnDr'](alpha_deg, beta_deg)*drdr
 
