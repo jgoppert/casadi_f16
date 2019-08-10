@@ -197,7 +197,7 @@ def test_table_3_5_2():
         phi=-1, theta=1, psi=-1,
         P=0.7, Q=-0.8, R=0.9,
         p_N=1000, p_E=900, alt=10000, power=90)
-    u = f16.Control(thtl=0.9, ail_deg=20, elv_deg=-15, rdr_deg=-20)
+    u = f16.Control(thtl=0.9, elv_deg=20, ail_deg=-15, rdr_deg=-20)
     tables = f16.build_tables()
     dx = f16.dynamics(x, u, p, tables)
     dx_compute = np.array(dx.to_casadi())[:, 0]

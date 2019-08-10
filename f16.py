@@ -78,7 +78,7 @@ def build_tables():
             [0.770,  0.241, -0.100, -0.416, -0.731, -1.053, -1.366, -1.646, -1.917, -2.120, -2.248, -2.229]
         ])
         interp = ca.interpolant('Cz_interp', INTERP_DEFAULT, [data[0, :]],
-                                data[1, :].ravel(order='F'))
+                                data[1, :])
         return ca.Function('Cz',
                            [alpha_deg, beta_deg, elev_deg],
                            [interp(alpha_deg)*(1 - (beta_deg/57.3)**2 - 0.19*elev_deg/25.0)],
@@ -322,12 +322,12 @@ class Control(CasadiDataClass):
 
 @dataclass
 class Parameters(CasadiDataClass):
-    s: float = 300  # reference area, ft^2
-    b: float = 30  # wing span, ft
+    s: float = 300.0  # reference area, ft^2
+    b: float = 30.0  # wing span, ft
     cbar: float = 11.32  # mean chord, ft
     xcgr: float = 0.35  # reference cg, %chord
     xcg: float = 0.35  # actual cg, %chord
-    hx: float = 160
+    hx: float = 160.0
     g: float = 32.17  # acceleration of gravity, ft/s^2
     weight: float = 20490.446  # weight, slugs
     axx: float = 9496.0  # moment of inertia about x
@@ -343,33 +343,66 @@ def dynamics(x: State, u: Control, p: Parameters, tables):
     cos = ca.cos
     sin = ca.sin
 
+    # parameters
+    weight = p.weight
+    g = p.g
+    axz = p.axz
+    axzs = axz*axz
+    axx = p.axx
+    ayy = p.ayy
+    azz = p.azz
+    hx = p.hx
+    b = p.b
+    cbar = p.cbar
+    s = p.s
+    xcg = p.xcg
+    xcgr = p.xcgr
+
+    # state
+    VT = x.VT
+    alpha = x.alpha
+    beta = x.beta
+    phi = x.phi
+    theta = x.theta
+    psi = x.psi
+    P = x.P
+    Q = x.Q
+    R = x.R
+    alt = x.alt
+    power = x.power
+
+    # input
+    thtl = u.thtl
+    ail_deg = u.ail_deg
+    elv_deg = u.elv_deg
+    rdr_deg = u.rdr_deg
+
     # mass properties
-    mass = p.weight/p.g
-    axzs = p.axz*p.axz
-    xqr = p.azz*(p.azz - p.ayy) + axzs
-    xpq = p.axz*(p.axx - p.ayy + p.azz)
-    zpq = (p.axx - p.ayy)*p.axx + axzs
-    gam = p.axx*p.azz - axzs
-    ypr = p.azz - p.axx
+    mass = weight/g
+    xqr = azz*(azz - ayy) + axzs
+    xpq = axz*(axx - ayy + azz)
+    zpq = (axx - ayy)*axx + axzs
+    gam = axx*azz - axzs
+    ypr = azz - axx
 
     # air data computer and engine model
-    amach = tables['amach'](x.VT, x.alt)
-    qbar = tables['qbar'](x.VT, x.alt)
-    power_cmd = tables['tgear'](u.thtl)
-    dx.power_dot = tables['pdot'](x.power, power_cmd)
-    thrust = tables['thrust'](x.power, x.alt, amach)
+    amach = tables['amach'](VT, alt)
+    qbar = tables['qbar'](VT, alt)
+    power_cmd = tables['tgear'](thtl)
+    dx.power_dot = tables['pdot'](power, power_cmd)
+    thrust = tables['thrust'](power, alt, amach)
 
-    # look-up tables and component buildup
+    # force component buildup
     rad2deg = 180/np.pi
-    alpha_deg = rad2deg*x.alpha
-    beta_deg = rad2deg*x.beta
+    alpha_deg = rad2deg*alpha
+    beta_deg = rad2deg*beta
+    dail = ail_deg/20.0
+    drdr = rdr_deg/30.0
 
-    cxt = tables['Cx'](alpha_deg, u.elv_deg)
-    cyt = tables['Cy'](beta_deg, u.ail_deg, u.rdr_deg)
-    czt = tables['Cz'](alpha_deg, beta_deg, u.elv_deg)
-    dail = u.ail_deg/20.0
-    drdr = u.rdr_deg/30.0
-
+    cxt = tables['Cx'](alpha_deg, elv_deg)
+    cyt = tables['Cy'](beta_deg, ail_deg, rdr_deg)
+    czt = tables['Cz'](alpha_deg, beta_deg, elv_deg)
+    
     clt = tables['Cl'](alpha_deg, beta_deg) \
         + tables['DlDa'](alpha_deg, beta_deg)*dail \
         + tables['DlDr'](alpha_deg, beta_deg)*drdr
@@ -378,63 +411,62 @@ def dynamics(x: State, u: Control, p: Parameters, tables):
         + tables['DnDa'](alpha_deg, beta_deg)*dail \
         + tables['DnDr'](alpha_deg, beta_deg)*drdr
 
-    # add damping derivatives
-    tvt = 0.5/x.VT
-    b2v = p.b*tvt
-    cq = p.cbar*x.Q*tvt
+    # damping
+    tvt = 0.5/VT
+    b2v = b*tvt
+    cq = cbar*Q*tvt
     cxt += cq*tables['CXq'](alpha_deg)
-    cyt += b2v*(tables['CYr'](alpha_deg)*x.R + tables['CYp'](alpha_deg)*x.P)
+    cyt += b2v*(tables['CYr'](alpha_deg)*R + tables['CYp'](alpha_deg)*P)
     czt += cq*tables['CZq'](alpha_deg)
-    clt += b2v*(tables['Clr'](alpha_deg)*x.R + tables['Clp'](alpha_deg)*x.P)
-    cmt += cq*tables['Cmq'](alpha_deg) + czt*(p.xcgr - p.xcg)
-    cnt += b2v*(tables['Cnr'](alpha_deg)*x.R + tables['Cnp'](alpha_deg)*x.P) - cyt*(p.xcgr - p.xcg)*p.cbar/p.b
+    clt += b2v*(tables['Clr'](alpha_deg)*R + tables['Clp'](alpha_deg)*P)
+    cmt += cq*tables['Cmq'](alpha_deg) + czt*(xcgr - xcg)
+    cnt += b2v*(tables['Cnr'](alpha_deg)*R + tables['Cnp'](alpha_deg)*P) - cyt*(xcgr - xcg)*cbar/b
 
     # get ready for state equations
-    cbta = cos(x.beta)
-    U = x.VT*cos(x.alpha)*cbta
-    V = x.VT*sin(x.beta)
-    W = x.VT*sin(x.alpha)*cbta
-    sth = sin(x.theta)
-    cth = cos(x.theta)
-    sph = sin(x.phi)
-    cph = cos(x.phi)
-    spsi = sin(x.psi)
-    cpsi = cos(x.psi)
-    qs = qbar*p.s
-    qsb = qs*p.b
+    cbta = cos(beta)
+    U = VT*cos(alpha)*cbta
+    V = VT*sin(beta)
+    W = VT*sin(alpha)*cbta
+    sth = sin(theta)
+    cth = cos(theta)
+    sph = sin(phi)
+    cph = cos(phi)
+    spsi = sin(psi)
+    cpsi = cos(psi)
+    qs = qbar*s
+    qsb = qs*b
     rmqs = qs/mass
-    gcth = p.g*cth
-    qsph = x.Q*sph
+    gcth = g*cth
+    qsph = Q*sph
     ay = rmqs*cyt
     az = rmqs*czt
 
     # force equations
-    U_dot = x.R*V - x.Q*W - p.g*sth + (qs*cxt + thrust)/mass
-    V_dot = x.P*W - x.R*U + gcth*sph + ay
-    W_dot = x.Q*U - x.P*V + gcth*cph + az
-    tmp = U**2 + W**2
+    U_dot = R*V - Q*W - g*sth + (qs*cxt + thrust)/mass
+    V_dot = P*W - R*U + gcth*sph + ay
+    W_dot = Q*U - P*V + gcth*cph + az
+    dum = U**2 + W**2
 
-    dx.VT_dot = (U*U_dot + V*V_dot + W*W_dot)/x.VT
-    dx.alpha_dot = (U*W_dot - W*U_dot) / tmp
-    dx.beta_dot = (x.VT*V_dot - V*dx.VT_dot)*cbta/tmp
+    dx.VT_dot = (U*U_dot + V*V_dot + W*W_dot)/VT
+    dx.alpha_dot = (U*W_dot - W*U_dot) / dum
+    dx.beta_dot = (VT*V_dot - V*dx.VT_dot)*cbta/dum
 
     # kinematics
-    dx.phi_dot = x.P + (sth/cth)*(qsph + x.R*cph)
-    dx.theta_dot = x.Q*cph - x.R*sph
-    dx.psi_dot = (qsph + x.R*cph)/cth
+    dx.phi_dot = P + (sth/cth)*(qsph + R*cph)
+    dx.theta_dot = Q*cph - R*sph
+    dx.psi_dot = (qsph + R*cph)/cth
 
     # moments
     roll = qsb*clt
-    pitch = qs*p.cbar*cmt
+    pitch = qs*cbar*cmt
     yaw = qsb*cnt
-    pq = x.P*x.Q
-    qr = x.Q*x.R
-    qhx = x.Q*p.hx
+    pq = P*Q
+    qr = Q*R
+    qhx = Q*hx
 
-    dx.P_dot = (xpq*pq - xqr*qr + p.azz*roll + p.axz*(yaw + qhx)) / gam
-    dx.Q_dot = (ypr*x.P*x.R - p.axz*(x.P**2 - x.R**2) +
-                pitch - x.R*p.hx) / p.ayy
-    dx.R_dot = (zpq*pq - xpq*qr + p.axz*roll + p.axx*(yaw + qhx)) / gam
+    dx.P_dot = (xpq*pq - xqr*qr + azz*roll + axz*(yaw + qhx)) / gam
+    dx.Q_dot = (ypr*P*R - axz*(P**2 - R**2) + pitch - R*hx) / ayy
+    dx.R_dot = (zpq*pq - xpq*qr + axz*roll + axx*(yaw + qhx)) / gam
 
     # navigation
     t1 = sph*cpsi
