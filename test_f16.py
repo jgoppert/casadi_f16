@@ -26,10 +26,12 @@ def plot_table2D(title, path, x_grid, y_grid, x_label, y_label, f_table):
 
 
 def test_tables():
-    alpha_deg_grid = np.linspace(-10, 45, 20)
-    beta_deg_grid = np.linspace(-30, 30, 20)
-    elev_deg_grid = np.linspace(-24, 24, 20)
-    ail_deg_grid = np.linspace(-24, 24, 20)
+    alpha_deg_grid = np.linspace(-15, 50, 20)
+    beta_deg_grid = np.linspace(-35, 35, 20)
+    elev_deg_grid = np.linspace(-30, 30, 20)
+    ail_deg_grid = np.linspace(-30, 30, 20)
+    mach_grid = np.linspace(0, 1.1, 20)
+    alt_grid = np.linspace(-1e4, 6e4, 20)
 
     path = pathlib.Path('results')
     path.mkdir(parents=True, exist_ok=True)
@@ -43,6 +45,9 @@ def test_tables():
                  lambda x, y: tables['Cy'](x, y, 0))
     plot_table2D('Cz', path, alpha_deg_grid, beta_deg_grid, 'alpha_deg', 'beta_deg',
                  lambda x, y: tables['Cz'](x, y, 0))
+    plot_table2D('thrust_idle', path, alt_grid, mach_grid, 'alt, ft', 'mach', tables['thrust_idle'])
+    plot_table2D('thrust_mil', path, alt_grid, mach_grid, 'alt, ft', 'mach', tables['thrust_mil'])
+    plot_table2D('thrust_max', path, alt_grid, mach_grid, 'alt, ft', 'mach', tables['thrust_max'])
 
     plt.figure()
     lift = []
