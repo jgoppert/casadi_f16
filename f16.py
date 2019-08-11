@@ -1,4 +1,4 @@
-from dataclasses import dataclass, astuple
+import dataclasses
 import numpy as np
 
 import casadi as ca
@@ -282,18 +282,45 @@ def build_tables():
 
     return tables
 
-
 class CasadiDataClass:
 
+    def __post_init__(self):
+        self.__name_to_index = {}
+        self.__index_to_name = {}
+        for i, field in enumerate(self.fields()):
+            self.__name_to_index[field.name] = i
+            self.__index_to_name[i] = field.name
+
+    @classmethod
+    def fields(cls):
+        return dataclasses.fields(cls)
+    
     def to_casadi(self):
-        return ca.vertcat(*astuple(self))
+        return ca.vertcat(*self.to_tuple())
+
+    def to_tuple(self):
+        return dataclasses.astuple(self)
+
+    def to_dict(self):
+        return dataclasses.asdict(self)
 
     @classmethod
     def from_casadi(cls, v):
         return cls(*[v[i] for i in range(v.shape[0])])
 
+    @classmethod
+    def sym(cls, name):
+        v = ca.MX.sym(name, len(cls.fields()))
+        return cls(*[v[i] for i in range(v.shape[0])])
 
-@dataclass
+    def name_to_index(self, name):
+        return self.__name_to_index[name]
+
+    def index_to_name(self, index):
+        return self.__index_to_name[index]
+
+
+@dataclasses.dataclass
 class State(CasadiDataClass):
     VT: float = 0  # true velocity, (ft/s)
     alpha: float = 0  # angle of attack, (rad)
@@ -310,7 +337,7 @@ class State(CasadiDataClass):
     power: float = 0  # power, (0-1)
 
 
-@dataclass
+@dataclasses.dataclass
 class StateDot(CasadiDataClass):
     VT_dot: float = 0  # true velocity derivative, (ft/s^2)
     alpha_dot: float = 0  # angle of attack rate, (rad/s)
@@ -327,7 +354,7 @@ class StateDot(CasadiDataClass):
     power_dot: float = 0  # power rate, (NA)
 
 
-@dataclass
+@dataclasses.dataclass
 class Control(CasadiDataClass):
     thtl: float = 0  # throttle (0-1)
     ail_deg: float = 0  # aileron, (deg)
@@ -335,7 +362,7 @@ class Control(CasadiDataClass):
     rdr_deg: float = 0  # rudder, (deg)
 
 
-@dataclass
+@dataclasses.dataclass
 class Parameters(CasadiDataClass):
     s: float = 300.0  # reference area, ft^2
     b: float = 30.0  # wing span, ft

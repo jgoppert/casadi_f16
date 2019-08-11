@@ -4,9 +4,17 @@ import pathlib
 import f16
 import casadi as ca
 import pytest
+from casadi.tools.graph import graph
+import os
 
 
 TRIM_TOL = 1e-5
+
+
+def create_graph(expr, path):
+    pdot = graph.dotgraph(expr)
+    os.remove('source.dot')
+    pdot.write_png(path)
 
 
 def plot_table2D(title, path, x_grid, y_grid, x_label, y_label, f_table):
