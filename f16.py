@@ -529,6 +529,12 @@ def dynamics(x: State, u: Control, p: Parameters, tables):
     return dx
 
 
+def trim_cost(dx: StateDot):
+    return dx.VT_dot**2 + \
+        100*(dx.alpha_dot**2 + dx.beta_dot**2) + \
+        10*(dx.P_dot**2 + dx.Q_dot**2 + dx.R_dot**2)
+
+
 class StateSpace:
 
     def __init__(self, A, B, C, D, x, u, y=None, dt=None):

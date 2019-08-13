@@ -81,13 +81,6 @@ def test_tables():
         plt.savefig(path.joinpath('damp_{:s}.png'.format(name)))
         plt.close()
 
-
-def trim_cost(dx: f16.StateDot):
-    return dx.VT_dot**2 + \
-        100*(dx.alpha_dot**2 + dx.beta_dot**2) + \
-        10*(dx.P_dot**2 + dx.Q_dot**2 + dx.R_dot**2)
-
-
 def test_jacobian():
     x_sym = ca.MX.sym('x', 13)
     u_sym = ca.MX.sym('u', 4)
@@ -113,7 +106,7 @@ def test_trim1():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < TRIM_TOL
+    assert f16.trim_cost(dx) < TRIM_TOL
 
 
 def test_trim2():
@@ -125,7 +118,7 @@ def test_trim2():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < TRIM_TOL
+    assert f16.trim_cost(dx) < TRIM_TOL
 
 
 def test_trim3():
@@ -136,7 +129,7 @@ def test_trim3():
     tables = f16.build_tables()
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
-    assert trim_cost(dx) < TRIM_TOL
+    assert f16.trim_cost(dx) < TRIM_TOL
 
 
 def test_trim4():
@@ -150,7 +143,7 @@ def test_trim4():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < TRIM_TOL
+    assert f16.trim_cost(dx) < TRIM_TOL
 
 
 def test_trim5():
@@ -163,7 +156,7 @@ def test_trim5():
     x.power = tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < 2e-2 # doesn't converge as close
+    assert f16.trim_cost(dx) < 2e-2 # doesn't converge as close
 
 
 def test_trim6():
@@ -178,7 +171,7 @@ def test_trim6():
     tables = f16.build_tables()
     dx = f16.dynamics(x, u, p, tables)
     print(dx)
-    assert trim_cost(dx) < TRIM_TOL
+    assert f16.trim_cost(dx) < TRIM_TOL
 
 
 def test_table_3_5_2():
