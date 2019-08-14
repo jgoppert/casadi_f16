@@ -1,0 +1,12 @@
+name: casadi_f16
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pip
+  - matplotlib
+  - numpy
+  - scipy
+  - control
+  - pip:
+    - casadi
