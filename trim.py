@@ -1,11 +1,13 @@
 # pylint: disable=invalid-name, too-many-locals, missing-docstring, too-many-arguments, redefined-outer-name
+import time
 import matplotlib.pyplot as plt
 import casadi as ca
 import numpy as np
 import f16
 
 
-def trim(s0, x: f16.State, p: f16.Parameters, tables, phi_dot, theta_dot, psi_dot, gam):
+def trim(s0, x: f16.State, p: f16.Parameters,
+         phi_dot: float, theta_dot: float, psi_dot: float, gam: float):
 
     def constrain(x, s):
         u = f16.Control(thtl=s[0], elv_deg=s[1], ail_deg=s[2], rdr_deg=s[3])
@@ -48,12 +50,12 @@ def trim(s0, x: f16.State, p: f16.Parameters, tables, phi_dot, theta_dot, psi_do
         x.R = -sin(phi)*theta_dot + cos(phi)*cos(theta)*psi_dot
 
         # engine power constraint
-        x.power = tables['tgear'](u.thtl)
+        x.power = f16.tables['tgear'](u.thtl)
         return x, u
 
     s = ca.MX.sym('s', 6)
     x, u = constrain(x, s)
-    f = f16.trim_cost(f16.dynamics(x, u, p, tables))
+    f = f16.trim_cost(f16.dynamics(x, u, p))
     nlp = {'x': s, 'f': f}
     S = ca.nlpsol('S', 'ipopt', nlp, {
         'ipopt': {
@@ -71,8 +73,8 @@ def simulate(x0, u0, t0, tf, dt):
     x = f16.State.from_casadi(xs)
     us = ca.MX.sym('u', 4)
     u = f16.Control.from_casadi(us)
-    dae = {'x': xs, 'p': us, 'ode': f16.dynamics(x, u, p, tables).to_casadi()}
-    F = ca.integrator('F', 'idas', dae, {'t0': 0, 'tf': dt})
+    dae = {'x': xs, 'p': us, 'ode': f16.dynamics(x, u, p).to_casadi()}
+    F = ca.integrator('F', 'idas', dae, {'t0': 0, 'tf': dt, 'jit': True})
     x = np.array(x0.to_casadi()).reshape(-1)
     u = np.array(u0.to_casadi()).reshape(-1)
     data = {
@@ -80,7 +82,6 @@ def simulate(x0, u0, t0, tf, dt):
         'x': [x]
     }
     t_vect = np.arange(t0, tf, dt)
-    dt = 0.01
     for t in t_vect:
         x = np.array(F(x0=x, p=u)['xf']).reshape(-1)
         data['t'].append(t)
@@ -91,17 +92,19 @@ def simulate(x0, u0, t0, tf, dt):
 
 
 # %%
+start = time.time()
 p = f16.Parameters()
-tables = f16.build_tables()
 x0, u0 = trim(
     s0=[0, 0, 0, 0, 0, 0],
     x=f16.State(VT=500, alt=5000),
     p=p,
-    tables=tables,
-    phi_dot=0, theta_dot=0, psi_dot=0.3, gam=0)
+    phi_dot=0, theta_dot=0, psi_dot=0.2, gam=0)
+print('trim computation time', time.time() - start)
+# %%
+start = time.time()
+data = simulate(x0, u0, 0, 10, 0.01)
+print('sim computation time', time.time() - start)
 
-
-data = simulate(x0, u0, 0, 50, 0.1)
 state_index = f16.State().name_to_index
 
 plt.figure()
@@ -110,8 +113,26 @@ plt.xlabel('E, ft')
 plt.ylabel('N, ft')
 plt.show()
 
-# plt.figure()
-#plt.plot(data['t'], data['x'][:, state_index('p_N')])
+plt.figure()
+plt.plot(data['t'], data['x'][:, state_index('alpha')], label='alpha')
+plt.plot(data['t'], data['x'][:, state_index('beta')], label='beta')
+plt.plot(data['t'], data['x'][:, state_index('theta')], label='theta')
+plt.legend()
+plt.show()
+
+plt.figure()
+plt.plot(data['t'], data['x'][:, state_index('VT')], label='VT')
+plt.legend()
+plt.show()
+
+
+plt.figure()
+plt.plot(data['t'], data['x'][:, state_index('phi')], label='phi')
+plt.plot(data['t'], data['x'][:, state_index('theta')], label='theta')
+plt.plot(data['t'], data['x'][:, state_index('psi')], label='psi')
+plt.legend()
+plt.show()
+
 
 # plt.figure()
 #plt.plot(data['t'], data['x'][:, state_index('p_E')])

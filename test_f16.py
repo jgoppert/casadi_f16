@@ -44,7 +44,7 @@ def test_tables():
     path = pathlib.Path('results')
     path.mkdir(parents=True, exist_ok=True)
 
-    tables = f16.build_tables()
+    tables = f16.tables
     plot_table2D('Cl', path, alpha_deg_grid, beta_deg_grid, 'alpha_deg', 'beta_deg', tables['Cl'])
     plot_table2D('Cm', path, alpha_deg_grid, elev_deg_grid, 'alpha_deg', 'elev_deg', tables['Cm'])
     plot_table2D('Cn', path, alpha_deg_grid, beta_deg_grid, 'alpha_deg', 'beta_deg', tables['Cn'])
@@ -81,14 +81,14 @@ def test_tables():
         plt.savefig(path.joinpath('damp_{:s}.png'.format(name)))
         plt.close()
 
+
 def test_jacobian():
     x_sym = ca.MX.sym('x', 13)
     u_sym = ca.MX.sym('u', 4)
     x = f16.State.from_casadi(x_sym)
     u = f16.Control.from_casadi(u_sym)
     p = f16.Parameters()
-    tables = f16.build_tables()
-    dx = f16.dynamics(x, u, p, tables)
+    dx = f16.dynamics(x, u, p)
     A = ca.jacobian(dx.to_casadi(), x_sym)
     B = ca.jacobian(dx.to_casadi(), u_sym)
     f_A = ca.Function('A', [x_sym, u_sym], [A])
@@ -100,11 +100,10 @@ def test_jacobian():
 def test_trim1():
     # pg 197
     p = f16.Parameters()
-    tables = f16.build_tables()
     x = f16.State(VT=502, alpha=0.03691, theta=0.03691)
     u = f16.Control(thtl=0.1385, elv_deg=-0.7588)
-    x.power = tables['tgear'](u.thtl)
-    dx = f16.dynamics(x, u, p, tables)
+    x.power = f16.tables['tgear'](u.thtl)
+    dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
 
@@ -114,9 +113,8 @@ def test_trim2():
     p = f16.Parameters(xcg=0.3)
     x = f16.State(VT=502, alpha=0.03936, theta=0.03936)
     u = f16.Control(thtl=0.1485, elv_deg=-1.931)
-    tables = f16.build_tables()
-    x.power = tables['tgear'](u.thtl)
-    dx = f16.dynamics(x, u, p, tables)
+    x.power = f16.tables['tgear'](u.thtl)
+    dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
 
@@ -126,9 +124,8 @@ def test_trim3():
     p = f16.Parameters(xcg=0.38)
     x = f16.State(VT=502, alpha=0.03544, theta=0.03544)
     u = f16.Control(thtl=0.1325, elv_deg=-0.0559)
-    tables = f16.build_tables()
-    x.power = tables['tgear'](u.thtl)
-    dx = f16.dynamics(x, u, p, tables)
+    x.power = f16.tables['tgear'](u.thtl)
+    dx = f16.dynamics(x, u, p)
     assert f16.trim_cost(dx) < TRIM_TOL
 
 
@@ -139,24 +136,22 @@ def test_trim4():
     x = f16.State(VT=502, alpha=0.2485, beta=4.8e-4, phi=1.367, theta=0.05185,
                   P=-0.0155, Q=0.2934, R=0.06071)
     u = f16.Control(thtl=0.8499, elv_deg=-6.256, ail_deg=0.09891, rdr_deg=-0.4218)
-    tables = f16.build_tables()
-    x.power = tables['tgear'](u.thtl)
-    dx = f16.dynamics(x, u, p, tables)
+    x.power = f16.tables['tgear'](u.thtl)
+    dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
 
 
 def test_trim5():
     # pg 197
-    p = f16.Parameters(xcg=0.3) # listed as -0.3, must be typo
+    p = f16.Parameters(xcg=0.3)  # listed as -0.3, must be typo
     theta_dot = 0.3
     x = f16.State(VT=502, alpha=0.3006, beta=4.1e-5, theta=0.3006, Q=0.3)
     u = f16.Control(thtl=1.023, elv_deg=-7.082, ail_deg=-6.2e-4, rdr_deg=0.01655)
-    tables = f16.build_tables()
-    x.power = tables['tgear'](u.thtl)
-    dx = f16.dynamics(x, u, p, tables)
+    x.power = f16.tables['tgear'](u.thtl)
+    dx = f16.dynamics(x, u, p)
     print(dx)
-    assert f16.trim_cost(dx) < 2e-2 # doesn't converge as close
+    assert f16.trim_cost(dx) < 2e-2  # doesn't converge as close
 
 
 def test_trim6():
@@ -168,14 +163,13 @@ def test_trim6():
                   p_N=0, p_E=0, alt=0, power=6.412363e1)
     u = f16.Control(thtl=8.349601e-1, ail_deg=-1.481766,
                     elv_deg=9.553108e-2, rdr_deg=-4.118124e-1)
-    tables = f16.build_tables()
-    dx = f16.dynamics(x, u, p, tables)
+    dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
 
 
 def test_table_3_5_2():
-    #pg 187
+    # pg 187
     p = f16.Parameters(xcg=0.4)
     x = f16.State(
         VT=500, alpha=0.5, beta=-0.2,
@@ -183,8 +177,7 @@ def test_table_3_5_2():
         P=0.7, Q=-0.8, R=0.9,
         p_N=1000, p_E=900, alt=10000, power=90)
     u = f16.Control(thtl=0.9, elv_deg=20, ail_deg=-15, rdr_deg=-20)
-    tables = f16.build_tables()
-    dx = f16.dynamics(x, u, p, tables)
+    dx = f16.dynamics(x, u, p)
     dx_compute = np.array(dx.to_casadi())[:, 0]
     dx_check = np.array([
         -75.23724, -0.8813491, -0.4759990,

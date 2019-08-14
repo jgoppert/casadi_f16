@@ -58,7 +58,7 @@ def build_tables():
         names = ['CXq', 'CYr', 'CYp', 'CZq', 'Clr', 'Clp', 'Cmq', 'Cnr', 'Cnp']
         for i, name in enumerate(names):
             tables[name] = ca.interpolant('{:s}_interp'.format(name), INTERP_DEFAULT,
-                [data[0, :]], data[i + 1, :])
+                                          [data[0, :]], data[i + 1, :])
             # check
             for j, x in enumerate(data[0, :]):
                 assert ca.fabs(tables[name](x) - data[i + 1, j]) < TABLE_CHECK_TOL
@@ -282,6 +282,10 @@ def build_tables():
 
     return tables
 
+
+tables = build_tables()
+
+
 class CasadiDataClass:
 
     def __post_init__(self):
@@ -294,7 +298,7 @@ class CasadiDataClass:
     @classmethod
     def fields(cls):
         return dataclasses.fields(cls)
-    
+
     def to_casadi(self):
         return ca.vertcat(*self.to_tuple())
 
@@ -378,7 +382,8 @@ class Parameters(CasadiDataClass):
     axz: float = 982.0  # xz moment of inertia
 
 
-def dynamics(x: State, u: Control, p: Parameters, tables):
+def dynamics(x: State, u: Control, p: Parameters):
+
     dx = StateDot()
 
     # functions
@@ -444,7 +449,7 @@ def dynamics(x: State, u: Control, p: Parameters, tables):
     cxt = tables['Cx'](alpha_deg, elv_deg)
     cyt = tables['Cy'](beta_deg, ail_deg, rdr_deg)
     czt = tables['Cz'](alpha_deg, beta_deg, elv_deg)
-    
+
     clt = ca.sign(beta_deg)*tables['Cl'](alpha_deg, beta_deg) \
         + tables['DlDa'](alpha_deg, beta_deg)*dail \
         + tables['DlDr'](alpha_deg, beta_deg)*drdr
@@ -548,18 +553,18 @@ class StateSpace:
         if y is None:
             y = x
         self.y = {yi: i for i, yi in enumerate(y)}
-    
+
     def sub_system(self, x, u, y=None):
-        xi = np.array([ self.x[state] for state in x ])
-        ui = np.array([ self.u[inp] for inp in u ])
+        xi = np.array([self.x[state] for state in x])
+        ui = np.array([self.u[inp] for inp in u])
         if y is None:
             y = x
-        yi = np.array([ self.y[out] for out in y ])
+        yi = np.array([self.y[out] for out in y])
 
         A = self.A[xi].T[xi].T
         B = self.B[xi].T[ui].T
         C = self.C[yi].T[xi].T
-        D = self.D[yi].T[ui].T   
+        D = self.D[yi].T[ui].T
         return StateSpace(A, B, C, D, x, u, y, self.dt)
 
     def to_control(self):
@@ -575,6 +580,7 @@ class StateSpace:
 
     __repr__ = __str__
 
+
 def linearize(x0, u0, p0):
     """
     A function to perform linearizatoin of the f16 model
@@ -583,14 +589,13 @@ def linearize(x0, u0, p0):
     @param p0: parameters
     """
     x0 = x0.to_casadi()
-    u0 = u0.to_casadi()# Plot the compensated openloop bode plot
+    u0 = u0.to_casadi()  # Plot the compensated openloop bode plot
 
     x_sym = ca.MX.sym('x', x0.shape[0])
     u_sym = ca.MX.sym('u', u0.shape[0])
     x = State.from_casadi(x_sym)
     u = Control.from_casadi(u_sym)
-    tables = build_tables()
-    dx = dynamics(x, u, p0, tables)
+    dx = dynamics(x, u, p0)
     A = ca.jacobian(dx.to_casadi(), x_sym)
     B = ca.jacobian(dx.to_casadi(), u_sym)
     f_A = ca.Function('A', [x_sym, u_sym], [A])
@@ -602,6 +607,6 @@ def linearize(x0, u0, p0):
     C = np.eye(n)
     D = np.zeros((n, p))
     return StateSpace(A=A, B=B, C=C, D=D,
-        x=[f.name for f in x.fields()],
-        u=[f.name for f in u.fields()],
-        y=[f.name for f in x.fields()])
+                      x=[f.name for f in x.fields()],
+                      u=[f.name for f in u.fields()],
+                      y=[f.name for f in x.fields()])
