@@ -132,7 +132,7 @@ def test_trim3():
 def test_trim4():
     # pg 197
     p = f16.Parameters(xcg=0.3)
-    psi_dot = 0.3
+    # psi_dot = 0.3
     x = f16.State(VT=502, alpha=0.2485, beta=4.8e-4, phi=1.367, theta=0.05185,
                   P=-0.0155, Q=0.2934, R=0.06071)
     u = f16.Control(thtl=0.8499, elv_deg=-6.256, ail_deg=0.09891, rdr_deg=-0.4218)
@@ -145,7 +145,7 @@ def test_trim4():
 def test_trim5():
     # pg 197
     p = f16.Parameters(xcg=0.3)  # listed as -0.3, must be typo
-    theta_dot = 0.3
+    # theta_dot = 0.3
     x = f16.State(VT=502, alpha=0.3006, beta=4.1e-5, theta=0.3006, Q=0.3)
     u = f16.Control(thtl=1.023, elv_deg=-7.082, ail_deg=-6.2e-4, rdr_deg=0.01655)
     x.power = f16.tables['tgear'](u.thtl)
