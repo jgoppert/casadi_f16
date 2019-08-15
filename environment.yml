@@ -9,5 +9,6 @@ dependencies:
   - scipy
   - control
   - pytest
+  - pydot
   - pip:
     - casadi
