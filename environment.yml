@@ -8,5 +8,6 @@ dependencies:
   - numpy
   - scipy
   - control
+  - pytest
   - pip:
     - casadi
