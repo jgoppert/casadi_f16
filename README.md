@@ -1,3 +1,3 @@
-# casadi_f16 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jgoppert/casadi_f16/master) [[Binder Lab](https://mybinder.org/v2/gh/jgoppert/casadi_f16/master?urlpath=lab)
+# casadi_f16 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jgoppert/casadi_f16/master) [JupyterLab](https://mybinder.org/v2/gh/jgoppert/casadi_f16/master?urlpath=lab)
 
 F16 model for Casadi.
