@@ -137,5 +137,14 @@ plt.show()
 # plt.figure()
 #plt.plot(data['t'], data['x'][:, state_index('p_E')])
 
-
+p = f16.Parameters()
+u_list = []
+VT_list = np.arange(100, 800, 50)
+for VT in VT_list:
+    x0, u0 = trim(np.zeros(6), f16.State(VT=VT), p, 0, 0, 0, 0)
+    u_list.append(np.array(u0.to_casadi()))
+u_list = np.hstack(u_list)
+plt.plot(VT_list, 100*u_list[0, :])
+plt.xlabel('VT, ft/s')
+plt.ylabel('power, %')
 # %%
