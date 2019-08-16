@@ -161,8 +161,8 @@ def test_trim6():
                   phi=1.366289, theta=5.000808e-2, psi=2.340769e-1,
                   P=-1.499617e-2, Q=2.933811e-1, R=6.084932e-2,
                   p_N=0, p_E=0, alt=0, power=6.412363e1)
-    u = f16.Control(thtl=8.349601e-1, ail_deg=-1.481766,
-                    elv_deg=9.553108e-2, rdr_deg=-4.118124e-1)
+    u = f16.Control(thtl=8.349601e-1, elv_deg=-1.481766,
+                    ail_deg=9.553108e-2, rdr_deg=-4.118124e-1)
     dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
