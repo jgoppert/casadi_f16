@@ -704,6 +704,7 @@ def trim(s0, x: State, p: Parameters,
     f = trim_cost(dynamics(x, u, p))
     nlp = {'x': s, 'f': f}
     S = ca.nlpsol('S', 'ipopt', nlp, {
+        'print_time': 0,
         'ipopt': {
             'print_level': 0,
         }
