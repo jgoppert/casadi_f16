@@ -706,6 +706,7 @@ def trim(s0, x: State, p: Parameters,
     S = ca.nlpsol('S', 'ipopt', nlp, {
         'print_time': 0,
         'ipopt': {
+            'sb': 'yes',
             'print_level': 0,
         }
     })
