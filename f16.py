@@ -734,6 +734,7 @@ def simulate(x0: State, f_control, p: Parameters, t0: float, tf:float, dt: float
     dae = {'x': xs, 'p': us, 'ode': dynamics(x, u, p).to_casadi()}
     F = ca.integrator('F', 'idas', dae, {'t0': 0, 'tf': dt, 'jit': True})
     x = np.array(x0.to_casadi()).reshape(-1)
+    u0 = f_control(t, x0)
     u = np.array(u0.to_casadi()).reshape(-1)
     data = {
         't': [0],
@@ -741,6 +742,8 @@ def simulate(x0: State, f_control, p: Parameters, t0: float, tf:float, dt: float
     }
     t_vect = np.arange(t0, tf, dt)
     for t in t_vect:
+        u0 = f_control(t, x)
+        u = np.array(u0.to_casadi()).reshape(-1)
         x = np.array(F(x0=x, p=u)['xf']).reshape(-1)
         data['t'].append(t)
         data['x'].append(x)
