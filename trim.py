@@ -17,7 +17,8 @@ x0, u0 = f16.trim(
 print('trim computation time', time.time() - start)
 # %%
 start = time.time()
-data = f16.simulate(x0, u0, p, 0, 10, 0.01)
+f_control = lambda t, x: u0
+data = f16.simulate(x0, f_control, p, 0, 10, 0.01)
 print('sim computation time', time.time() - start)
 
 state_index = f16.State().name_to_index
