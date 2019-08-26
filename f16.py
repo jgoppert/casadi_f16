@@ -734,7 +734,7 @@ def simulate(x0: State, f_control, p: Parameters, t0: float, tf:float, dt: float
     dae = {'x': xs, 'p': us, 'ode': dynamics(x, u, p).to_casadi()}
     F = ca.integrator('F', 'idas', dae, {'t0': 0, 'tf': dt, 'jit': True})
     x = np.array(x0.to_casadi()).reshape(-1)
-    u0 = f_control(t, x0)
+    u0 = f_control(t0, x0)
     u = np.array(u0.to_casadi()).reshape(-1)
     data = {
         't': [0],
