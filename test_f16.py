@@ -83,7 +83,7 @@ def test_tables():
 
 
 def test_jacobian():
-    x_sym = ca.MX.sym('x', 13)
+    x_sym = ca.MX.sym('x', 16)
     u_sym = ca.MX.sym('u', 4)
     x = f16.State.from_casadi(x_sym)
     u = f16.Control.from_casadi(u_sym)
@@ -93,16 +93,16 @@ def test_jacobian():
     B = ca.jacobian(dx.to_casadi(), u_sym)
     f_A = ca.Function('A', [x_sym, u_sym], [A])
     f_B = ca.Function('B', [x_sym, u_sym], [B])
-    print('A', f_A(np.ones(13), np.ones(4)))
-    print('B', f_B(np.ones(13), np.ones(4)))
+    print('A', f_A(np.ones(16), np.ones(4)))
+    print('B', f_B(np.ones(16), np.ones(4)))
 
 
 def test_trim1():
     # pg 197
     p = f16.Parameters()
     x = f16.State(VT=502, alpha=0.03691, theta=0.03691)
-    u = f16.Control(thtl=0.1385, elv_deg=-0.7588)
-    x.power = f16.tables['tgear'](u.thtl)
+    u = f16.Control(thtl=0.1385, elv_cmd_deg=-0.7588)
+    x = f16.trim_actuators(x, u)
     dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
@@ -112,7 +112,8 @@ def test_trim2():
     # pg 197
     p = f16.Parameters(xcg=0.3)
     x = f16.State(VT=502, alpha=0.03936, theta=0.03936)
-    u = f16.Control(thtl=0.1485, elv_deg=-1.931)
+    u = f16.Control(thtl=0.1485, elv_cmd_deg=-1.931)
+    x = f16.trim_actuators(x, u)
     x.power = f16.tables['tgear'](u.thtl)
     dx = f16.dynamics(x, u, p)
     print(dx)
@@ -123,8 +124,8 @@ def test_trim3():
     # pg 197
     p = f16.Parameters(xcg=0.38)
     x = f16.State(VT=502, alpha=0.03544, theta=0.03544)
-    u = f16.Control(thtl=0.1325, elv_deg=-0.0559)
-    x.power = f16.tables['tgear'](u.thtl)
+    u = f16.Control(thtl=0.1325, elv_cmd_deg=-0.0559)
+    x = f16.trim_actuators(x, u)
     dx = f16.dynamics(x, u, p)
     assert f16.trim_cost(dx) < TRIM_TOL
 
@@ -135,8 +136,10 @@ def test_trim4():
     # psi_dot = 0.3
     x = f16.State(VT=502, alpha=0.2485, beta=4.8e-4, phi=1.367, theta=0.05185,
                   P=-0.0155, Q=0.2934, R=0.06071)
-    u = f16.Control(thtl=0.8499, elv_deg=-6.256, ail_deg=0.09891, rdr_deg=-0.4218)
-    x.power = f16.tables['tgear'](u.thtl)
+    u = f16.Control(
+        thtl=0.8499, elv_cmd_deg=-6.256,
+        ail_cmd_deg=0.09891, rdr_cmd_deg=-0.4218)
+    x = f16.trim_actuators(x, u)
     dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
@@ -147,8 +150,10 @@ def test_trim5():
     p = f16.Parameters(xcg=0.3)  # listed as -0.3, must be typo
     # theta_dot = 0.3
     x = f16.State(VT=502, alpha=0.3006, beta=4.1e-5, theta=0.3006, Q=0.3)
-    u = f16.Control(thtl=1.023, elv_deg=-7.082, ail_deg=-6.2e-4, rdr_deg=0.01655)
-    x.power = f16.tables['tgear'](u.thtl)
+    u = f16.Control(
+        thtl=1.023, elv_cmd_deg=-7.082,
+        ail_cmd_deg=-6.2e-4, rdr_cmd_deg=0.01655)
+    x = f16.trim_actuators(x, u)
     dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < 2e-2  # doesn't converge as close
@@ -161,8 +166,9 @@ def test_trim6():
                   phi=1.366289, theta=5.000808e-2, psi=2.340769e-1,
                   P=-1.499617e-2, Q=2.933811e-1, R=6.084932e-2,
                   p_N=0, p_E=0, alt=0, power=6.412363e1)
-    u = f16.Control(thtl=8.349601e-1, elv_deg=-1.481766,
-                    ail_deg=9.553108e-2, rdr_deg=-4.118124e-1)
+    u = f16.Control(thtl=8.349601e-1, elv_cmd_deg=-1.481766,
+                    ail_cmd_deg=9.553108e-2, rdr_cmd_deg=-4.118124e-1)
+    x = f16.trim_actuators(x, u)
     dx = f16.dynamics(x, u, p)
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
@@ -175,15 +181,19 @@ def test_table_3_5_2():
         VT=500, alpha=0.5, beta=-0.2,
         phi=-1, theta=1, psi=-1,
         P=0.7, Q=-0.8, R=0.9,
-        p_N=1000, p_E=900, alt=10000, power=90)
-    u = f16.Control(thtl=0.9, elv_deg=20, ail_deg=-15, rdr_deg=-20)
+        p_N=1000, p_E=900, alt=10000)
+    u = f16.Control(
+        thtl=0.9, elv_cmd_deg=20,
+        ail_cmd_deg=-15, rdr_cmd_deg=-20)
+    x = f16.trim_actuators(x, u)
+    x.power = 90
     dx = f16.dynamics(x, u, p)
     dx_compute = np.array(dx.to_casadi())[:, 0]
     dx_check = np.array([
         -75.23724, -0.8813491, -0.4759990,
         2.505734, 0.3250820, 2.145926,
         12.62679, 0.9649671, 0.5809759,
-        342.4439, -266.7707, 248.1241, -58.68999
+        342.4439, -266.7707, 248.1241, -58.68999, 0, 0, 0
     ])
     print('\nexpected:\n\t', dx_check)
     print('\nactual:\n\t', dx_compute)

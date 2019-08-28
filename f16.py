@@ -339,6 +339,9 @@ class State(CasadiDataClass):
     p_E: float = 0  # east position, (m)
     alt: float = 0  # altitude, (m)
     power: float = 0  # power, (0-1)
+    ail_deg: float = 0  # aileron position, (deg)
+    elv_deg: float = 0  # elevator position, (deg)
+    rdr_deg: float = 0  # rudder position, (deg)
 
 
 @dataclasses.dataclass
@@ -356,14 +359,17 @@ class StateDot(CasadiDataClass):
     V_E: float = 0  # east velocity, (m/s)
     alt_dot: float = 0  # climb rate, (m/s)
     power_dot: float = 0  # power rate, (NA)
+    ail_rate_dps: float = 0  # aileron rate, (deg/s)
+    elv_rate_dps: float = 0  # elevator rate, (deg/s)
+    rdr_rate_dps: float = 0  # rudder rate, (deg/s)
 
 
 @dataclasses.dataclass
 class Control(CasadiDataClass):
     thtl: float = 0  # throttle (0-1)
-    ail_deg: float = 0  # aileron, (deg)
-    elv_deg: float = 0  # elevator, (deg)
-    rdr_deg: float = 0  # rudder, (deg)
+    ail_cmd_deg: float = 0  # aileron command, (deg)
+    elv_cmd_deg: float = 0  # elevator command, (deg)
+    rdr_cmd_deg: float = 0  # rudder command, (deg)
 
 
 @dataclasses.dataclass
@@ -409,11 +415,9 @@ def force_moment(x: State, u: Control, p: Parameters):
     R = x.R
     alt = x.alt
     power = x.power
-
-    # input
-    ail_deg = u.ail_deg
-    elv_deg = u.elv_deg
-    rdr_deg = u.rdr_deg
+    ail_deg = x.ail_deg
+    elv_deg = x.elv_deg
+    rdr_deg = x.rdr_deg
 
     # mass properties
     mass = weight/g
@@ -437,7 +441,7 @@ def force_moment(x: State, u: Control, p: Parameters):
     clt = ca.sign(beta_deg)*tables['Cl'](alpha_deg, beta_deg) \
         + tables['DlDa'](alpha_deg, beta_deg)*dail \
         + tables['DlDr'](alpha_deg, beta_deg)*drdr
-    cmt = tables['Cm'](alpha_deg, u.elv_deg)
+    cmt = tables['Cm'](alpha_deg, elv_deg)
     cnt = ca.sign(beta_deg)*tables['Cn'](alpha_deg, beta_deg) \
         + tables['DnDa'](alpha_deg, beta_deg)*dail \
         + tables['DnDr'](alpha_deg, beta_deg)*drdr
@@ -509,6 +513,9 @@ def dynamics(x: State, u: Control, p: Parameters):
     Q = x.Q
     R = x.R
     power = x.power
+    ail_deg = x.ail_deg
+    rdr_deg = x.rdr_deg
+    elv_deg = x.elv_deg
 
     # mass properties
     mass = weight/g
@@ -572,7 +579,24 @@ def dynamics(x: State, u: Control, p: Parameters):
     dx.V_N = U*s1 + V*s3 + W*s6
     dx.V_E = U*s2 + V*s4 + W*s7
     dx.alt_dot = U*sth - V*s5 - W*s8
+
+    def saturate(x, min_val, max_val):
+        return ca.if_else(x < min_val, min_val, ca.if_else(x > max_val, max_val, x))
+
+    # actuators
+    dx.ail_rate_dps = saturate(20.202*(u.ail_cmd_deg - ail_deg), -60, 60)
+    dx.elv_rate_dps = saturate(20.202*(u.elv_cmd_deg - elv_deg), -60, 60)
+    dx.rdr_rate_dps = saturate(20.202*(u.rdr_cmd_deg - rdr_deg), -60, 60)
+
     return dx
+
+
+def trim_actuators(x, u):
+    x.power = tables['tgear'](u.thtl)
+    x.ail_deg = u.ail_cmd_deg
+    x.elv_deg = u.elv_cmd_deg
+    x.rdr_deg = u.rdr_cmd_deg
+    return x
 
 
 def trim_cost(dx: StateDot):
@@ -656,9 +680,11 @@ def trim(s0, x: State, p: Parameters,
          phi_dot: float, theta_dot: float, psi_dot: float, gam: float):
 
     def constrain(x, s):
-        u = Control(thtl=s[0], elv_deg=s[1], ail_deg=s[2], rdr_deg=s[3])
+        u = Control(thtl=s[0], elv_cmd_deg=s[1], ail_cmd_deg=s[2], rdr_cmd_deg=s[3])
         alpha = s[4]
         beta = s[5]
+
+        x = trim_actuators(x, u)
 
         x.alpha = alpha
         x.beta = beta
@@ -695,8 +721,6 @@ def trim(s0, x: State, p: Parameters,
         x.Q = cos(phi)*phi_dot + sin(phi)*cos(theta)*psi_dot
         x.R = -sin(phi)*theta_dot + cos(phi)*cos(theta)*psi_dot
 
-        # engine power constraint
-        x.power = tables['tgear'](u.thtl)
         return x, u
 
     s = ca.MX.sym('s', 6)
@@ -727,7 +751,7 @@ def simulate(x0: State, f_control, p: Parameters, t0: float, tf:float, dt: float
     @param tf: fintal time
     @param dt: The discrete sampling time of the controller.
     """
-    xs = ca.MX.sym('x', 13)
+    xs = ca.MX.sym('x', 16)
     x = State.from_casadi(xs)
     us = ca.MX.sym('u', 4)
     u = Control.from_casadi(us)
