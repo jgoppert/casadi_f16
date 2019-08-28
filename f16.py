@@ -9,6 +9,10 @@ INTERP_DEFAULT = 'linear'
 TABLE_CHECK_TOL = 1e-9  # need to increase if using bspline
 
 
+def saturate(x, min_val, max_val):
+    return ca.if_else(x < min_val, min_val, ca.if_else(x > max_val, max_val, x))
+
+
 def build_tables():
     tables = {}
 
@@ -580,14 +584,21 @@ def dynamics(x: State, u: Control, p: Parameters):
     dx.V_E = U*s2 + V*s4 + W*s7
     dx.alt_dot = U*sth - V*s5 - W*s8
 
-    def saturate(x, min_val, max_val):
-        return ca.if_else(x < min_val, min_val, ca.if_else(x > max_val, max_val, x))
-
     # actuators
-    dx.ail_rate_dps = saturate(20.202*(u.ail_cmd_deg - ail_deg), -60, 60)
-    dx.elv_rate_dps = saturate(20.202*(u.elv_cmd_deg - elv_deg), -60, 60)
-    dx.rdr_rate_dps = saturate(20.202*(u.rdr_cmd_deg - rdr_deg), -60, 60)
+    ail_deg = saturate(x.ail_deg, -21.5, 21.5)
+    elv_deg = saturate(x.elv_deg, -25.0, 25.0)
+    rdr_deg = saturate(x.rdr_deg, -30.0, 30.0)
 
+    def actuator_model(cmd, pos, rate_limit, pos_limit):
+        rate = saturate(20.202*(cmd - pos), -rate_limit, rate_limit)
+        return ca.if_else(rate < 0,
+            ca.if_else(pos < -pos_limit, 0, rate),
+            ca.if_else(pos > pos_limit, 0, rate))
+
+    dx.ail_rate_dps = actuator_model(u.ail_cmd_deg, ail_deg, 60, 21.5)
+    dx.elv_rate_dps = actuator_model(u.elv_cmd_deg, elv_deg, 60, 25.0)
+    dx.rdr_rate_dps = actuator_model(u.rdr_cmd_deg, rdr_deg, 60, 30.0)
+    
     return dx
 
 
