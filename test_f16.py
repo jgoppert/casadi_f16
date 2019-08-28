@@ -173,6 +173,15 @@ def test_trim6():
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
 
+def test_trim_computation():
+    # pg 195
+    p = f16.Parameters()
+    x = f16.State(VT=502)
+    x0, u0 = f16.trim(x=x, p=p, phi_dot=0, theta_dot=0, psi_dot=0, gam=0)
+    dx = f16.dynamics(x0, u0, p)
+    print(dx)
+    assert f16.trim_cost(dx) < TRIM_TOL
+
 
 def test_table_3_5_2():
     # pg 187

@@ -687,8 +687,22 @@ def linearize(x0, u0, p0):
                       u=[f.name for f in u.fields()],
                       y=[f.name for f in x.fields()])
 
-def trim(s0, x: State, p: Parameters,
-         phi_dot: float, theta_dot: float, psi_dot: float, gam: float):
+def trim(x: State, p: Parameters,
+        phi_dot: float, theta_dot: float, psi_dot: float, gam: float, s0: np.array=None):
+    """
+    Trims the aircraft at the given conditions.
+
+    @param x: vehicle state
+    @param p: parameters
+    @param phi_dot: Body321 roll rate
+    @param theta_dot: Body321 pitch rate
+    @param psi_dot: Body321 yaw rate
+    @param s0: the initial guess for the trim design vector
+
+    @return (x0, u0) The state and input at the trim condition.
+    """
+    if s0 is None:
+        s0 = np.zeros(6)
 
     def constrain(x, s):
         u = Control(thtl=s[0], elv_cmd_deg=s[1], ail_cmd_deg=s[2], rdr_cmd_deg=s[3])
