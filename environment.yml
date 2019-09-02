@@ -10,5 +10,6 @@ dependencies:
   - control
   - pytest
   - pydot
+  - autopep8
   - pip:
     - casadi

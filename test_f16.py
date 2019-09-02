@@ -173,6 +173,7 @@ def test_trim6():
     print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
 
+
 def test_trim_computation():
     # pg 195
     p = f16.Parameters()
