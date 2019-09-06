@@ -11,12 +11,6 @@ import os
 TRIM_TOL = 1e-5
 
 
-def create_graph(expr, path):
-    pdot = graph.dotgraph(expr)
-    os.remove('source.dot')
-    pdot.write_png(path)
-
-
 def plot_table2D(title, path, x_grid, y_grid, x_label, y_label, f_table):
     X, Y = np.meshgrid(x_grid, y_grid)
     Z = np.zeros((len(x_grid), len(y_grid)))
@@ -174,14 +168,17 @@ def test_trim6():
     assert f16.trim_cost(dx) < TRIM_TOL
 
 
-def test_trim_computation():
-    # pg 195
+def test_trim_and_linearize():
     p = f16.Parameters()
     x = f16.State(VT=502)
     x0, u0 = f16.trim(x=x, p=p, phi_dot=0, theta_dot=0, psi_dot=0, gam=0)
     dx = f16.dynamics(x0, u0, p)
-    print(dx)
     assert f16.trim_cost(dx) < TRIM_TOL
+    print(dx)
+    sys = f16.linearize(x0, u0, p)
+    sys.sub_system(['VT', 'elv_deg', 'alpha', 'Q'], ['elv_cmd_deg'], ['alpha', 'Q'])
+    print(sys)
+    ss = sys.to_control()
 
 
 def test_table_3_5_2():
@@ -209,3 +206,9 @@ def test_table_3_5_2():
     print('\nactual:\n\t', dx_compute)
     print('\nerror:\n\t', dx_check - dx_compute)
     assert np.allclose(dx_compute, dx_check, 1e-3)
+
+
+def test_simulate():
+    f_control = lambda t, x: f16.Control()
+    f16.simulate(x0=f16.State(VT=502), f_control= f_control,
+        p=f16.Parameters(), t0=0, tf=10, dt=0.01)

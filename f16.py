@@ -10,15 +10,21 @@ TABLE_CHECK_TOL = 1e-9  # need to increase if using bspline
 
 
 def saturate(x, min_val, max_val):
+    """
+    A casadi function for saturation.
+    """
     return ca.if_else(x < min_val, min_val, ca.if_else(x > max_val, max_val, x))
 
 
 def build_tables():
+    """
+    Constructs force and moment tables for f16.
+    """
     tables = {}
 
     def create_table2D(name, row_label, col_label, data, abs_row=False, abs_col=False, interp_method=INTERP_DEFAULT):
         """
-        Creates a table interpolation function with x as rows and y as columns
+        Creates a table interpolation function with x as rows and y as columns.
         """
         assert data[0, 0] == 0
         row_grid = data[1:, 0]
@@ -57,8 +63,7 @@ def build_tables():
             [-0.360, -0.359, -0.443, -0.420, -0.383, -0.375, -0.329, -0.294, -0.230, -0.210, -0.120, -0.100],  # Clp
             [-7.21,  -0.540, -5.23,  -5.26,  -6.11,  -6.64,  -5.69,  -6.00,  -6.20,  -6.40,  -6.60,  -6.00],  # Cmq
             [-0.380, -0.363, -0.378, -0.386, -0.370, -0.453, -0.550, -0.582, -0.595, -0.637, -1.02,  -0.840],  # Cnr
-            [0.061,   0.052,  0.052, -0.012, -0.013, -0.024,  0.050,  0.150,  0.130,  0.158,  0.240,  0.150]   # Cnp
-        ])
+            [0.061,   0.052,  0.052, -0.012, -0.013, -0.024,  0.050,  0.150,  0.130,  0.158,  0.240,  0.150]])  # Cnp
         names = ['CXq', 'CYr', 'CYp', 'CZq', 'Clr', 'Clp', 'Cmq', 'Cnr', 'Cnp']
         for i, name in enumerate(names):
             tables[name] = ca.interpolant('{:s}_interp'.format(name), INTERP_DEFAULT,
@@ -77,8 +82,7 @@ def build_tables():
             [-12, -0.048, -0.038, -0.040, -0.021,  0.016,  0.083,  0.127,  0.137,  0.162,  0.177,   0.179,  0.167],  # elev, deg
             [0,   -0.022, -0.020, -0.021, -0.004,  0.032,  0.094,  0.128,  0.130,  0.154,  0.161,   0.155,  0.138],
             [12,  -0.040, -0.038, -0.039, -0.025,  0.006,  0.062,  0.087,  0.085,  0.100,  0.110,   0.104,  0.091],
-            [24,  -0.083, -0.073, -0.076, -0.072, -0.046,  0.012,  0.024,  0.025,  0.043,  0.053,   0.047,  0.040]
-        ]).T)
+            [24,  -0.083, -0.073, -0.076, -0.072, -0.046,  0.012,  0.024,  0.025,  0.043,  0.053,   0.047,  0.040]]).T)
 
     def create_Cy():
         beta_deg = ca.MX.sym('beta_deg')
@@ -94,8 +98,7 @@ def build_tables():
         elev_deg = ca.MX.sym('elev_deg')
         data = np.array([
             [-10,   -5,      0,      5,     10,      15,     20,     25,     30,     35,     40,     45],
-            [0.770,  0.241, -0.100, -0.416, -0.731, -1.053, -1.366, -1.646, -1.917, -2.120, -2.248, -2.229]
-        ])
+            [0.770,  0.241, -0.100, -0.416, -0.731, -1.053, -1.366, -1.646, -1.917, -2.120, -2.248, -2.229]])
         interp = ca.interpolant('Cz_interp', INTERP_DEFAULT, [data[0, :]],
                                 data[1, :])
         return ca.Function('Cz',
@@ -115,8 +118,7 @@ def build_tables():
             [15, -0.001, -0.010, -0.020, -0.030, -0.039, -0.044, -0.050, -0.049, -0.023, -0.006,  -0.014, -0.027],
             [20,  0.000, -0.010, -0.022, -0.034, -0.047, -0.046, -0.059, -0.061, -0.033, -0.036,  -0.035, -0.035],
             [25,  0.007, -0.010, -0.023, -0.034, -0.049, -0.046, -0.068, -0.071, -0.060, -0.058,  -0.062, -0.059],
-            [30,  0.009, -0.011, -0.023, -0.037, -0.050, -0.047, -0.074, -0.079, -0.091, -0.076,  -0.077, -0.076]
-        ]).T, abs_col=True)
+            [30,  0.009, -0.011, -0.023, -0.037, -0.050, -0.047, -0.074, -0.079, -0.091, -0.076,  -0.077, -0.076]]).T, abs_col=True)
 
     tables['Cm'] = create_table2D(
         name='Cm', row_label='alpha_deg', col_label='elev_deg',
@@ -126,8 +128,7 @@ def build_tables():
             [-12,  0.081,  0.077,  0.107,  0.110,  0.110,  0.141,  0.127,  0.119,  0.133,  0.108,   0.081,  0.093],  # elev, deg
             [0,   -0.046, -0.020, -0.009, -0.005, -0.006,  0.010,  0.006, -0.001,  0.014,  0.000,  -0.013,  0.032],
             [12,  -0.174, -0.145, -0.121, -0.127, -0.129, -0.102, -0.097, -0.113, -0.087, -0.084,  -0.069, -0.006],
-            [24,  -0.259, -0.202, -0.184, -0.193, -0.199, -0.150, -0.160, -0.167, -0.104, -0.076,  -0.041, -0.005]
-        ]).T)
+            [24,  -0.259, -0.202, -0.184, -0.193, -0.199, -0.150, -0.160, -0.167, -0.104, -0.076,  -0.041, -0.005]]).T)
 
     tables['Cn'] = create_table2D(
         name='Cn', row_label='alpha_deg', col_label='beta_deg',
@@ -139,8 +140,7 @@ def build_tables():
             [15,  0.056,  0.057,  0.059,  0.058,  0.058,  0.053,  0.032,  0.012,  0.002, -0.046,  -0.071, -0.073],
             [20,  0.064,  0.077,  0.076,  0.074,  0.073,  0.057,  0.029,  0.007,  0.012, -0.034,  -0.065, -0.041],
             [25,  0.074,  0.086,  0.093,  0.089,  0.080,  0.062,  0.049,  0.022,  0.028, -0.012,  -0.002, -0.013],
-            [30,  0.079,  0.090,  0.106,  0.106,  0.096,  0.080,  0.068,  0.030,  0.064,  0.015,   0.011, -0.001]
-        ]).T, abs_col=True)
+            [30,  0.079,  0.090,  0.106,  0.106,  0.096,  0.080,  0.068,  0.030,  0.064,  0.015,   0.011, -0.001]]).T, abs_col=True)
 
     tables['DlDa'] = create_table2D(
         name='DlDa', row_label='alpha_deg', col_label='beta_deg',
@@ -152,8 +152,7 @@ def build_tables():
             [0,   -0.040, -0.052, -0.051, -0.052, -0.048, -0.048, -0.042, -0.037, -0.031, -0.026, -0.017, -0.012],
             [10,  -0.043, -0.049, -0.048, -0.049, -0.043, -0.042, -0.042, -0.036, -0.025, -0.021, -0.016, -0.011],
             [20,  -0.044, -0.048, -0.048, -0.047, -0.042, -0.041, -0.020, -0.028, -0.013, -0.014, -0.011, -0.010],
-            [30,  -0.043, -0.049, -0.047, -0.045, -0.042, -0.037, -0.003, -0.013, -0.010, -0.003, -0.007, -0.008]
-        ]).T)
+            [30,  -0.043, -0.049, -0.047, -0.045, -0.042, -0.037, -0.003, -0.013, -0.010, -0.003, -0.007, -0.008]]).T)
 
     tables['DlDr'] = create_table2D(
         name='DlDr', row_label='alpha_deg', col_label='beta_deg',
@@ -165,8 +164,7 @@ def build_tables():
             [0,    0.018,  0.015,  0.015,  0.014,  0.014,  0.014,  0.014,  0.015,  0.013,  0.011,  0.006,  0.001],
             [10,   0.015,  0.014,  0.013,  0.013,  0.012,  0.011,  0.011,  0.010,  0.008,  0.008,  0.007,  0.003],
             [20,   0.021,  0.011,  0.010,  0.011,  0.010,  0.009,  0.008,  0.010,  0.006,  0.005,  0.000,  0.001],
-            [30,   0.023,  0.010,  0.011,  0.011,  0.011,  0.010,  0.008,  0.010,  0.006,  0.014,  0.020,  0.000]
-        ]).T)
+            [30,   0.023,  0.010,  0.011,  0.011,  0.011,  0.010,  0.008,  0.010,  0.006,  0.014,  0.020,  0.000]]).T)
 
     tables['DnDa'] = create_table2D(
         name='DnDa', row_label='alpha_deg', col_label='beta_deg',
@@ -178,8 +176,7 @@ def build_tables():
             [0,   -0.011, -0.011, -0.010, -0.009, -0.008, -0.006,  0.000,  0.004,  0.007,  0.010,  0.004,  0.010],
             [10,  -0.015, -0.015, -0.014, -0.012, -0.011, -0.008, -0.002,  0.002,  0.006,  0.012,  0.011,  0.011],
             [20,  -0.024, -0.010, -0.004, -0.002, -0.001,  0.003,  0.014,  0.006, -0.001,  0.004,  0.004,  0.006],
-            [30,  -0.022,  0.002, -0.003, -0.005, -0.003, -0.001, -0.009, -0.009, -0.001,  0.003, -0.002,  0.001]
-        ]).T)
+            [30,  -0.022,  0.002, -0.003, -0.005, -0.003, -0.001, -0.009, -0.009, -0.001,  0.003, -0.002,  0.001]]).T)
 
     tables['DnDr'] = create_table2D(
         name='DnDr', row_label='alpha_deg', col_label='beta_deg',
@@ -191,8 +188,7 @@ def build_tables():
             [0,    -0.048, -0.045, -0.045, -0.045, -0.044, -0.045, -0.047, -0.048, -0.049, -0.045, -0.033, -0.016],
             [10,   -0.043, -0.044, -0.041, -0.041, -0.040, -0.038, -0.034, -0.035, -0.035, -0.029, -0.022, -0.009],
             [20,   -0.052, -0.034, -0.036, -0.036, -0.035, -0.028, -0.024, -0.023, -0.020, -0.016, -0.010, -0.014],
-            [30,   -0.062, -0.034, -0.027, -0.028, -0.027, -0.027, -0.023, -0.023, -0.019, -0.009, -0.025, -0.010]
-        ]).T)
+            [30,   -0.062, -0.034, -0.027, -0.028, -0.027, -0.027, -0.023, -0.023, -0.019, -0.009, -0.025, -0.010]]).T)
 
     tables['thrust_idle'] = create_table2D(
         name='thrust_idle', row_label='alt_ft', col_label='mach',
@@ -203,8 +199,7 @@ def build_tables():
             [0.4,  60,    25,    345,   755,   1130,  1525],
             [0.6, -1020, -710,  -300,   350,   910,   1360],  # mach
             [0.8, -2700, -1900, -1300, -247,   600,   1100],
-            [1.0, -3600, -1400, -595,  -342,  -200,   700],
-        ]).T)
+            [1.0, -3600, -1400, -595,  -342,  -200,   700]]).T)
 
     tables['thrust_mil'] = create_table2D(
         name='thrust_mil', row_label='alt_ft', col_label='mach',
@@ -215,8 +210,7 @@ def build_tables():
             [0.4, 12610,  9312,  6610,  4290,  2600,  1560],  # mach
             [0.6, 12640,  9839,  7090,  4660,  2840,  1660],
             [0.8, 12390, 10176,  7750,  5320,  3250,  1930],
-            [1.0, 11680,  9848,  8050,  6100,  3800,  2310]
-        ]).T)
+            [1.0, 11680,  9848,  8050,  6100,  3800,  2310]]).T)
 
     tables['thrust_max'] = create_table2D(
         name='thrust_max', row_label='alt_ft', col_label='mach',
@@ -227,8 +221,7 @@ def build_tables():
             [0.4, 22700, 16860, 12250,  8154,  5000,  2835],  # mach
             [0.6, 24240, 18910, 13760,  9285,  5700,  3215],
             [0.8, 26070, 21075, 15975,  11115, 6860,  3950],
-            [1.0, 28886, 23319, 18300,  13484, 8642,  5057]
-        ]).T)
+            [1.0, 28886, 23319, 18300,  13484, 8642,  5057]]).T)
 
     def thrust():
         power = ca.MX.sym('power')
@@ -291,6 +284,9 @@ tables = build_tables()
 
 
 class CasadiDataClass:
+    """
+    A base class for dataclasses with casadi.
+    """
 
     def __post_init__(self):
         self.__name_to_index = {}
@@ -330,6 +326,7 @@ class CasadiDataClass:
 
 @dataclasses.dataclass
 class State(CasadiDataClass):
+    """The vehicle state."""
     VT: float = 0  # true velocity, (ft/s)
     alpha: float = 0  # angle of attack, (rad)
     beta: float = 0  # sideslip angle, (rad)
@@ -350,6 +347,7 @@ class State(CasadiDataClass):
 
 @dataclasses.dataclass
 class StateDot(CasadiDataClass):
+    """The derivative of the vehicle state."""
     VT_dot: float = 0  # true velocity derivative, (ft/s^2)
     alpha_dot: float = 0  # angle of attack rate, (rad/s)
     beta_dot: float = 0  # sideslip rate, (rad/s)
@@ -370,6 +368,7 @@ class StateDot(CasadiDataClass):
 
 @dataclasses.dataclass
 class Control(CasadiDataClass):
+    """The control input."""
     thtl: float = 0  # throttle (0-1)
     ail_cmd_deg: float = 0  # aileron command, (deg)
     elv_cmd_deg: float = 0  # elevator command, (deg)
@@ -378,6 +377,7 @@ class Control(CasadiDataClass):
 
 @dataclasses.dataclass
 class Parameters(CasadiDataClass):
+    """The constant parameters."""
     s: float = 300.0  # reference area, ft^2
     b: float = 30.0  # wing span, ft
     cbar: float = 11.32  # mean chord, ft
@@ -393,6 +393,12 @@ class Parameters(CasadiDataClass):
 
 
 def force_moment(x: State, u: Control, p: Parameters):
+    """
+    The function computes the forces and moments acting on the aircraft.
+    It is important to separate this from the dynamics as the Gazebo
+    simulator will be used to simulate extra forces and moments
+    from collision.
+    """
 
     # functions
     cos = ca.cos
@@ -488,6 +494,10 @@ def force_moment(x: State, u: Control, p: Parameters):
 
 
 def dynamics(x: State, u: Control, p: Parameters):
+    """
+    This function implements wind frame kinematics tied to the force and moment model.
+    It does not take into account any collision forces.
+    """
 
     Fb, Mb = force_moment(x, u, p)
 
@@ -592,17 +602,20 @@ def dynamics(x: State, u: Control, p: Parameters):
     def actuator_model(cmd, pos, rate_limit, pos_limit):
         rate = saturate(20.202*(cmd - pos), -rate_limit, rate_limit)
         return ca.if_else(rate < 0,
-            ca.if_else(pos < -pos_limit, 0, rate),
-            ca.if_else(pos > pos_limit, 0, rate))
+                          ca.if_else(pos < -pos_limit, 0, rate),
+                          ca.if_else(pos > pos_limit, 0, rate))
 
     dx.ail_rate_dps = actuator_model(u.ail_cmd_deg, ail_deg, 60, 21.5)
     dx.elv_rate_dps = actuator_model(u.elv_cmd_deg, elv_deg, 60, 25.0)
     dx.rdr_rate_dps = actuator_model(u.rdr_cmd_deg, rdr_deg, 60, 30.0)
-    
+
     return dx
 
 
 def trim_actuators(x, u):
+    """
+    This function sets the actuator output to the actuator command.
+    """
     x.power = tables['tgear'](u.thtl)
     x.ail_deg = u.ail_cmd_deg
     x.elv_deg = u.elv_cmd_deg
@@ -611,12 +624,21 @@ def trim_actuators(x, u):
 
 
 def trim_cost(dx: StateDot):
+    """
+    Computes the trim cost based on the state derivative.
+    """
     return dx.VT_dot**2 + \
         100*(dx.alpha_dot**2 + dx.beta_dot**2) + \
         10*(dx.P_dot**2 + dx.Q_dot**2 + dx.R_dot**2)
 
 
 class StateSpace:
+    """
+    A convenience class for create state space representations
+    easily and for creating subsystems based on the state names.
+    The class keeps track of the state, input, and output vector
+    component names.
+    """
 
     def __init__(self, A, B, C, D, x, u, y=None, dt=None):
         self.A = np.array(A)
@@ -660,9 +682,14 @@ class StateSpace:
 def linearize(x0, u0, p0):
     """
     A function to perform linearizatoin of the f16 model
-    @param x0: state
-    @param u0: input
-    @param p0: parameters
+
+    Parameters:
+    x0: state
+    u0: input
+    p0: parameters
+
+    Returns:
+    StateSpace: linearized system
     """
     x0 = x0.to_casadi()
     u0 = u0.to_casadi()  # Plot the compensated openloop bode plot
@@ -687,19 +714,23 @@ def linearize(x0, u0, p0):
                       u=[f.name for f in u.fields()],
                       y=[f.name for f in x.fields()])
 
+
 def trim(x: State, p: Parameters,
-        phi_dot: float, theta_dot: float, psi_dot: float, gam: float, s0: np.array=None):
+         phi_dot: float, theta_dot: float, psi_dot: float, gam: float, s0: np.array = None):
     """
     Trims the aircraft at the given conditions.
 
-    @param x: vehicle state
-    @param p: parameters
-    @param phi_dot: Body321 roll rate
-    @param theta_dot: Body321 pitch rate
-    @param psi_dot: Body321 yaw rate
-    @param s0: the initial guess for the trim design vector
+    Parameters:
+    x: vehicle state
+    p: parameters
+    phi_dot: Body321 roll rate
+    theta_dot: Body321 pitch rate
+    psi_dot: Body321 yaw rate
+    s0: the initial guess for the trim design vector
 
-    @return (x0, u0) The state and input at the trim condition.
+    Returns:
+    State: x0
+    Control: u0
     """
     if s0 is None:
         s0 = np.zeros(6)
@@ -765,16 +796,17 @@ def trim(x: State, p: Parameters,
     return x, u
 
 
-def simulate(x0: State, f_control, p: Parameters, t0: float, tf:float, dt: float):
+def simulate(x0: State, f_control, p: Parameters, t0: float, tf: float, dt: float):
     """
     Simulate the aircraft for a given control function and initial state.
 
-    @param x0: initial state (see State)
-    @param f_control: A function of the form f(t, x), which returns the control u
-    @param p: Aircraft parameters
-    @param t0: initial time
-    @param tf: fintal time
-    @param dt: The discrete sampling time of the controller.
+    Parameters:
+    x0: initial state (see State)
+    f_control: A function of the form f(t, x), which returns the control u
+    p: Aircraft parameters
+    t0: initial time
+    tf: fintal time
+    dt: The discrete sampling time of the controller.
     """
     xs = ca.MX.sym('x', 16)
     x = State.from_casadi(xs)
@@ -799,6 +831,3 @@ def simulate(x0: State, f_control, p: Parameters, t0: float, tf:float, dt: float
     for k in data.keys():
         data[k] = np.array(data[k])
     return data
-
-
-
